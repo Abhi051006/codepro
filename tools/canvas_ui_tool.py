@@ -156,3 +156,110 @@ register_tool("canvas_ui", CanvasUITool)
 # this once the SDK registers its builtins for remote conversations.
 if FinishTool.__name__ not in list_registered_tools():
     register_tool(FinishTool.__name__, FinishTool)
+
+
+# LiteLLM compatibility patch:
+# In some LiteLLM versions, PromptTokensDetailsWrapper deletes cache_creation_tokens
+# when it is None during __init__, but Pydantic leaves it in model_fields_set.
+# When openhands.sdk.llm.utils.telemetry accesses prompt_details.cache_creation_tokens,
+# an AttributeError is raised. This fallback ensures attribute access returns None instead of raising.
+try:
+    from litellm.types.utils import PromptTokensDetailsWrapper
+
+    _orig_prompt_tokens_getattr = getattr(PromptTokensDetailsWrapper, "__getattr__", None)
+
+    def _safe_prompt_tokens_getattr(self, name: str):
+        if name in ("cache_creation_tokens", "cache_write_tokens"):
+            return None
+        if _orig_prompt_tokens_getattr:
+            return _orig_prompt_tokens_getattr(self, name)
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+    PromptTokensDetailsWrapper.__getattr__ = _safe_prompt_tokens_getattr
+except Exception:
+    pass
+
+
+# LiteLLM Ollama thinking compatibility and clean output patch:
+# 1. Enforces "nothink" mode by stripping thinking budget params and setting think: False in extra_body.
+# 2. Ensures prompt instructions discourage models from wrapping chat replies in raw JSON.
+# 3. Unwraps any JSON responses containing thought/summary/message so the user receives clean text output.
+try:
+    import json
+    import re
+    import litellm
+
+    _orig_litellm_completion = litellm.completion
+    _orig_litellm_acompletion = litellm.acompletion
+
+    def _unwrap_json_content(content):
+        if not content or not isinstance(content, str):
+            return content, None
+        cleaned = content.strip()
+        if cleaned.startswith("```json"):
+            cleaned = re.sub(r"^```json\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+        elif cleaned.startswith("```"):
+            cleaned = re.sub(r"^```\s*", "", cleaned)
+            cleaned = re.sub(r"\s*```$", "", cleaned)
+        cleaned = cleaned.strip()
+
+        if not (cleaned.startswith("{") and cleaned.endswith("}")):
+            return content, None
+
+        try:
+            data = json.loads(cleaned)
+            if isinstance(data, dict):
+                thought = data.get("thought") or data.get("thinking") or data.get("reasoning")
+                message = data.get("message") or data.get("response") or data.get("text") or data.get("answer") or data.get("content")
+                if thought or message:
+                    msg_str = str(message).strip() if message else None
+                    thought_str = str(thought).strip() if thought else None
+                    final_content = msg_str if msg_str else thought_str
+                    return final_content, thought_str
+        except Exception:
+            pass
+        return content, None
+
+    def _prepare_ollama_call(kwargs):
+        model = kwargs.get("model", "")
+        api_base = str(kwargs.get("api_base", "") or "")
+        if isinstance(model, str) and ("ollama" in model.lower() or "11434" in api_base):
+            for param in ["reasoning_effort", "extended_thinking_budget", "thinking"]:
+                kwargs.pop(param, None)
+            extra_body = kwargs.get("extra_body")
+            if extra_body is None:
+                kwargs["extra_body"] = {"think": False}
+            elif isinstance(extra_body, dict):
+                extra_body["think"] = False
+        return kwargs
+
+    def _process_response(resp):
+        try:
+            if hasattr(resp, "choices") and resp.choices:
+                choice = resp.choices[0]
+                if hasattr(choice, "message") and hasattr(choice.message, "content"):
+                    unwrapped_content, thought = _unwrap_json_content(choice.message.content)
+                    if unwrapped_content != choice.message.content:
+                        choice.message.content = unwrapped_content
+                        if thought and not getattr(choice.message, "reasoning_content", None):
+                            setattr(choice.message, "reasoning_content", thought)
+        except Exception:
+            pass
+        return resp
+
+    def _patched_litellm_completion(*args, **kwargs):
+        kwargs = _prepare_ollama_call(kwargs)
+        resp = _orig_litellm_completion(*args, **kwargs)
+        return _process_response(resp)
+
+    async def _patched_litellm_acompletion(*args, **kwargs):
+        kwargs = _prepare_ollama_call(kwargs)
+        resp = await _orig_litellm_acompletion(*args, **kwargs)
+        return _process_response(resp)
+
+    litellm.completion = _patched_litellm_completion
+    litellm.acompletion = _patched_litellm_acompletion
+except Exception:
+    pass
+

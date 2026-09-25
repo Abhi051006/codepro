@@ -99,7 +99,14 @@ export function useLlmConfigured(): LlmConfiguredResult {
     profilesData?.profiles.find(
       (profile) => profile.name === profilesData?.active_profile,
     );
-  const hasActiveProfileApiKey = activeProfile?.api_key_set === true;
+  const isOllamaOrLocalModel =
+    typeof activeProfile?.model === "string" &&
+    (activeProfile.model.startsWith("ollama/") ||
+      activeProfile.model.startsWith("ollama_chat/") ||
+      Boolean(activeProfile.base_url?.includes("11434")));
+
+  const hasActiveProfileApiKey =
+    activeProfile?.api_key_set === true || isOllamaOrLocalModel;
   const shouldLoadActiveProfileDetail =
     isLocal && !!activeProfile && !hasActiveProfileApiKey;
   const {

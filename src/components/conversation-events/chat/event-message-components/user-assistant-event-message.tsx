@@ -113,17 +113,19 @@ function UserAssistantEventMessageComponent({
   return (
     <>
       {reasoning && <CollapsibleThinking content={reasoning} />}
-      <ChatMessage
-        type={event.source}
-        message={message}
-        isFromPlanningAgent={isFromPlanningAgent}
-        actions={actions}
-        timestamp={event.timestamp}
-      >
-        {imageUrls.length > 0 && (
-          <ImageCarousel size="small" images={imageUrls} />
-        )}
-      </ChatMessage>
+      {(message || imageUrls.length > 0) && (
+        <ChatMessage
+          type={event.source}
+          message={message}
+          isFromPlanningAgent={isFromPlanningAgent}
+          actions={actions}
+          timestamp={event.timestamp}
+        >
+          {imageUrls.length > 0 && (
+            <ImageCarousel size="small" images={imageUrls} />
+          )}
+        </ChatMessage>
+      )}
       {event.source === "agent" && event.critic_result != null && (
         <CriticResultDisplay criticResult={event.critic_result} />
       )}

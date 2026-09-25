@@ -132,7 +132,7 @@ export function SidebarRailBody({
           className={cn(
             collapsed && showCollapseToggle
               ? SIDEBAR_COLLAPSED_LOGO_WRAPPER_CLASS
-              : "flex min-w-0 shrink-0 items-center",
+              : "flex min-w-0 shrink-0 items-center gap-2",
           )}
         >
           <div
@@ -141,6 +141,7 @@ export function SidebarRailBody({
                 showCollapseToggle &&
                 "flex h-full w-full items-center justify-start pl-2.5 transition-opacity duration-150",
               collapsed && showCollapsedExpandButton && "opacity-0",
+              !collapsed && "flex items-center gap-2",
             )}
           >
             <OpenHandsLogoButton
@@ -149,6 +150,12 @@ export function SidebarRailBody({
               logoClassName="max-w-none"
               className={cn(SIDEBAR_ICON_SLOT_CLASS, "overflow-visible")}
             />
+            {!collapsed && (
+              /* eslint-disable-next-line i18next/no-literal-string */
+              <span className="font-bold text-base tracking-tight text-contrast select-none">
+                CodePro
+              </span>
+            )}
           </div>
           {collapsed && showCollapseToggle ? (
             <button

@@ -53,6 +53,103 @@ export const hasNonEmptyThought = (action: ActionEvent): boolean =>
  * only the first block is peeled, and an unclosed leading `<think>` is reasoning
  * only while `streaming` — in a finalized message it's literal output.
  */
+export const extractJsonThoughtAndMessage = (
+  content: string,
+  isStreaming?: boolean,
+): { reasoning: string; message: string } | null => {
+  const trimmed = content.trim();
+  let candidate = trimmed;
+
+  if (candidate.startsWith("```json")) {
+    candidate = candidate
+      .replace(/^```json\s*/, "")
+      .replace(/\s*```$/, "")
+      .trim();
+  } else if (candidate.startsWith("```")) {
+    candidate = candidate
+      .replace(/^```\s*/, "")
+      .replace(/\s*```$/, "")
+      .trim();
+  }
+
+  if (!candidate.startsWith("{")) {
+    return null;
+  }
+
+  // Attempt full JSON parse if closed
+  if (candidate.endsWith("}")) {
+    try {
+      const data = JSON.parse(candidate);
+      if (typeof data === "object" && data !== null && !Array.isArray(data)) {
+        const thoughtVal =
+          data.thought ?? data.thinking ?? data.reasoning ?? "";
+        const messageVal =
+          data.message ??
+          data.response ??
+          data.text ??
+          data.answer ??
+          data.content ??
+          "";
+
+        const thoughtStr =
+          typeof thoughtVal === "string" ? thoughtVal.trim() : "";
+        const msgStr = typeof messageVal === "string" ? messageVal.trim() : "";
+
+        if (thoughtStr || msgStr) {
+          return {
+            reasoning: "",
+            message: msgStr || thoughtStr,
+          };
+        }
+      }
+    } catch {
+      // Fall through to regex extraction below if invalid / partial JSON
+    }
+  }
+
+  // Mid-stream or partial JSON extraction
+  if (isStreaming || candidate.startsWith("{")) {
+    const thoughtMatch =
+      /"(?:thought|thinking|reasoning)"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(
+        candidate,
+      );
+    const msgMatch =
+      /"(?:message|response|text|answer|content)"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(
+        candidate,
+      );
+
+    let thoughtStr = "";
+    let msgStr = "";
+
+    if (thoughtMatch) {
+      try {
+        thoughtStr = JSON.parse(`"${thoughtMatch[1]}"`);
+      } catch {
+        thoughtStr = thoughtMatch[1];
+      }
+    }
+
+    if (msgMatch) {
+      try {
+        msgStr = JSON.parse(`"${msgMatch[1]}"`);
+      } catch {
+        msgStr = msgMatch[1];
+      }
+    }
+
+    if (thoughtStr || msgStr) {
+      return {
+        reasoning: "",
+        message:
+          msgStr.trim() ||
+          (thoughtMatch && !msgMatch && isStreaming ? "" : thoughtStr.trim()),
+      };
+    }
+  }
+
+  return null;
+};
+
 export const splitInlineThink = (
   content: string,
   options?: { streaming?: boolean },
@@ -63,6 +160,13 @@ export const splitInlineThink = (
   // Only a <think> at the very start is reasoning.
   const leading = content.replace(/^\s+/, "");
   if (!leading.startsWith(OPEN)) {
+    const jsonResult = extractJsonThoughtAndMessage(
+      content,
+      options?.streaming,
+    );
+    if (jsonResult) {
+      return jsonResult;
+    }
     return { reasoning: "", message: content };
   }
 

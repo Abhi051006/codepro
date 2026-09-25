@@ -53,7 +53,7 @@ vi.mock(
 );
 
 vi.mock("#/hooks/use-app-title", () => ({
-  useAppTitle: () => "OpenHands",
+  useAppTitle: () => "CodePro",
 }));
 
 vi.mock("#/components/features/sidebar/sidebar", () => ({
@@ -258,7 +258,7 @@ describe("root layout", () => {
     expect(syncAutomationTelemetryConsentMock).toHaveBeenCalledOnce();
     expect(telemetryIdentityMock).toHaveBeenCalledOnce();
     expect(ensureActiveProfileMock).toHaveBeenCalledOnce();
-    expect(document.title).toBe("OpenHands");
+    expect(document.title).toBe("CodePro");
     expect(
       await screen.findByTestId("environment-switch-overlay"),
     ).toBeInTheDocument();

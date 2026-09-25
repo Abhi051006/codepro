@@ -2,7 +2,7 @@
 
 ## General
 
-- This repository is the OpenHands Agent Canvas React/TypeScript frontend.
+- This repository is the CodePro React/TypeScript frontend.
 - Primary verification commands are `npm run lint`, `npm test`, `npm run build`, and `npm run build:lib`.
 - Direct dependencies and dev dependencies are exact-pinned. Use the committed `package-lock.json` with `npm ci`, and update `package.json` and `package-lock.json` together through npm.
 - Public skills come from `@openhands/extensions`; project-specific contributor guidance lives under `.agents/skills/`.

@@ -2,12 +2,12 @@
 
 <div align="center">
   <img src="https://assets.openhands.dev/logo-whitebackground.png" alt="OpenHands logo" width="340">
-  <h1 align="center" style="border-bottom: none">Agent Canvas</h1>
+  <h1 align="center" style="border-bottom: none">CodePro</h1>
   <p align="center">
     <strong>The self-hosted developer control center for coding agents and automations.</strong>
   </p>
   <p align="center">
-    Run OpenHands, Claude Code, Codex, Gemini, or any ACP-compatible agent across local, remote, and cloud backends.
+    Run CodePro, Claude Code, Codex, Gemini, or any ACP-compatible agent across local, remote, and cloud backends.
   </p>
 </div>
 <div align="center">
@@ -30,11 +30,11 @@
 </p>
 <hr>
 
-OpenHands Agent Canvas turns your coding agents into a self-hosted, always-on engineering team. It's a developer control center for starting conversations and automating everyday tasks — like generating reports that publish to Slack or automatically decomposing GitHub issues into tasks.
+CodePro turns your coding agents into a self-hosted, always-on engineering team. It's a developer control center for starting conversations and automating everyday tasks — like generating reports that publish to Slack or automatically decomposing GitHub issues into tasks.
 
-It runs locally on your machine by default, but can connect to multiple “agent backends”, e.g. running agents in Docker containers, on VMs, or within your company infrastructure. You can optionally choose to run agents on OpenHands Cloud or OpenHands Enterprise infrastructure.
+It runs locally on your machine by default, but can connect to multiple “agent backends”, e.g. running agents in Docker containers, on VMs, or within your company infrastructure. You can optionally choose to run agents on CodePro Cloud or CodePro Enterprise infrastructure.
 
-Agent Canvas runs the open source OpenHands agent out-of-the-box, but can use any third-party agent like Claude Code and Codex.
+CodePro runs the open source CodePro agent out-of-the-box, but can use any third-party agent like Claude Code and Codex.
 
 |                                                                                                                      |                                                                                                                                          |
 | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |

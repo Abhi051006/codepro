@@ -988,7 +988,7 @@ function CloudLoginColumn({
   const handleLoginSuccess = (apiKey: string) => {
     onConnected(
       {
-        name: "OpenHands Cloud",
+        name: "CodePro Cloud",
         host: normalizeHost(effectiveHost),
         apiKey,
         kind: "cloud",

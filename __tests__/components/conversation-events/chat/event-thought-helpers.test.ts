@@ -83,4 +83,42 @@ describe("splitInlineThink", () => {
       message: content,
     });
   });
+
+  it("extracts clean message and suppresses thought from a raw JSON object", () => {
+    const content = JSON.stringify({
+      thought: "The user has repeated their greeting.",
+      summary: "Acknowledged greeting.",
+      message: "Hello there! How can I help you today?",
+    });
+    expect(splitInlineThink(content)).toEqual({
+      reasoning: "",
+      message: "Hello there! How can I help you today?",
+    });
+  });
+
+  it("extracts thought as message when JSON object has only thought", () => {
+    const content = JSON.stringify({
+      thought: "The user has greeted the agent.",
+    });
+    expect(splitInlineThink(content)).toEqual({
+      reasoning: "",
+      message: "The user has greeted the agent.",
+    });
+  });
+
+  it("extracts clean message and suppresses thought from markdown-wrapped JSON", () => {
+    const content = `\`\`\`json\n{\n  "thought": "Thinking about python code",\n  "message": "print('hello')"\n}\n\`\`\``;
+    expect(splitInlineThink(content)).toEqual({
+      reasoning: "",
+      message: "print('hello')",
+    });
+  });
+
+  it("extracts streaming message from partial JSON in nothink mode", () => {
+    const partial = '{"thought": "Partial reasoning", "message": "Partial msg';
+    expect(splitInlineThink(partial, { streaming: true })).toEqual({
+      reasoning: "",
+      message: "Partial msg",
+    });
+  });
 });
